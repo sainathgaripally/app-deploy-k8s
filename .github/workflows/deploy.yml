@@ -21,5 +21,3 @@
     
         - name: Print outputs of step 1
           run: echo "Outputs {{ outputs.step1 }}"
-          run: echo "Provided input is ${{ inputs.environment }}"
-    
