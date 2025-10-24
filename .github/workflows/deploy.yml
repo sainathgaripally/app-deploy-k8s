@@ -19,7 +19,7 @@
           id: step1
           run: | 
             echo "Provided input is ${{ inputs.environment }}"
-            artifact_name="some-radom"
+            echo "artifact_name=some-radom" >> $GITHUB_OUTPUT
     
         - name: Print outputs of step 1
           run: echo "Outputs ${{ steps.step1.outputs.artifact_name }}"
