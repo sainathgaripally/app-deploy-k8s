@@ -1,1 +1,20 @@
+  name: Application Deployment
 
+  on:
+    # push:
+    #   branches: [ dev, qa, prod ]
+    workflow_dispatch:
+      inputs:
+        environment:
+          type: choice
+          required: true
+          description: Select the environment
+          options: [ dev, qa, prod ]
+    
+  jobs:
+    print-job:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Print inputs
+          run: echo "Provided input is ${{ inputs.environment }}"
+    
