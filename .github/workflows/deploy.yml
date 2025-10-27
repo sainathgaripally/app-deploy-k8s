@@ -40,30 +40,11 @@
             -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
             -Dsonar.host.login=${{ env.SONAR_TOKEN }} \
             -Dskiptests=false
-            
-        - name: Check SonarQube Quality Gate (self-hosted)
-          id: qualitygate
-          working-directory: .
+
+        - name: Wait for SonarQube Quality Gate (Python)
+          run: |
+            pip install requests
+            python scripts/wait_for_quality_gate.py
           env:
             SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          run: |
-            echo "Waiting for SonarQube analysis to complete..."
-            sleep 30
-            REPORT_FILE="target/sonar/report-task.txt"
-
-            if [ ! -f "$REPORT_FILE" ]; then
-              echo "❌ SonarQube report file not found at $REPORT_FILE"
-              echo "quality_gate_passed=false" >> $GITHUB_OUTPUT
-              exit 1
-            fi
-        
-            analysisId=$(grep "ceTaskId" "$REPORT_FILE" | cut -d'=' -f2)
-            echo "Analysis ID: $analysisId"
-        
-            gateStatus=$(curl -s -u "${SONAR_TOKEN}:" \
-              "${SONAR_HOST_URL}/api/qualitygates/project_status?analysisId=${analysisId}" \
-              | jq -r '.projectStatus.status')
-        
-            echo "Quality Gate: $gateStatus"
-            echo "quality_gate_passed=$([ "$gateStatus" = "OK" ] && echo true || echo false)" >> $GITHUB_OUTPUT
