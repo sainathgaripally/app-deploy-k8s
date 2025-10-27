@@ -61,4 +61,13 @@
           run: | 
             echo ${{ steps.sonarcheck.outputs.gate_status }}
             echo ${{ steps.sonarcheck.outputs.gate_message }}
-    
+
+        - name: Comment on PR
+          if: github.event_name == 'pull_request'
+          uses: marocchino/sticky-pull-request-comment@v2
+          with:
+            header: sonarqube-quality-gate
+            message: |
+                🏁 **SonarQube Quality Gate Result**
+                ${{ steps.sonarcheck.outputs.gate_message }}
+              
