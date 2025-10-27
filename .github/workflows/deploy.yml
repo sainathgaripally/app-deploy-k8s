@@ -50,10 +50,20 @@
           run: |
             echo "Waiting for SonarQube analysis to complete..."
             sleep 30
-            analysisId=$(grep "ceTaskId" .scannerwork/report-task.txt | cut -d'=' -f2)
+            REPORT_FILE="target/sonar/report-task.txt"
+
+            if [ ! -f "$REPORT_FILE" ]; then
+              echo "❌ SonarQube report file not found at $REPORT_FILE"
+              echo "quality_gate_passed=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+        
+            analysisId=$(grep "ceTaskId" "$REPORT_FILE" | cut -d'=' -f2)
+            echo "Analysis ID: $analysisId"
+        
             gateStatus=$(curl -s -u "${SONAR_TOKEN}:" \
               "${SONAR_HOST_URL}/api/qualitygates/project_status?analysisId=${analysisId}" \
               | jq -r '.projectStatus.status')
+        
             echo "Quality Gate: $gateStatus"
             echo "quality_gate_passed=$([ "$gateStatus" = "OK" ] && echo true || echo false)" >> $GITHUB_OUTPUT
-
