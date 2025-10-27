@@ -5,7 +5,7 @@
     pull_request:
       branches:
         - dev
-      types: [ opened ]
+      types: [ opened, synchronized ]
     push:
       branches: 
         - dev
