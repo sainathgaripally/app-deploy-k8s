@@ -9,7 +9,11 @@
     push:
       branches: 
         - dev
-      
+  permissions: 
+    contents: read
+    issues: write
+    pull-requests: write
+    
   jobs:
     build_and_analyze:
       name: Build, Test, and SonarQube Scan
