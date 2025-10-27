@@ -6,12 +6,19 @@
       branches:
         - dev
       types: [ opened ]
-      
+    push:
+      branches: 
+        - dev
+  permissions: 
+    contents: read
+    issues: write
+    pull-requests: write
+    
   jobs:
     build_and_analyze:
       name: Build, Test, and SonarQube Scan
       runs-on: ubuntu-latest
-
+      if: github.event_name != 'push'
       steps:
         - name: Checkout repository
           uses: actions/checkout@v4
@@ -75,4 +82,11 @@
                 🏁 **SonarQube Quality Gate Result**
                 ${{ steps.sonarcheck.outputs.gate_message }}
                 ${{ steps.sonarcheck.outputs.gate_status }}
-              
+
+    build_and_deploy:
+      runs-on: ubuntu-latest
+      needs: [build_and_analyze]
+      if: github.event_name == 'push'
+      steps:
+        - name: Run step1
+          run: echo "Running step1"
