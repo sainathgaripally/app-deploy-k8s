@@ -40,10 +40,18 @@
             -Dsonar.host.login=${{ env.SONAR_TOKEN }} \
             -Dskiptests=false
             
-        - name: Check SonarQube Quality Gate
+        - name: Check SonarQube Quality Gate (self-hosted)
           id: qualitygate
-          uses: SanderKnape/sonarqube-quality-gate-action@v1.1.0
-          with:
-            host: ${{ secrets.SONAR_HOST_URL }}
-            login: ${{ secrets.SONAR_TOKEN }}
+          env:
+            SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          run: |
+            echo "Waiting for SonarQube analysis to complete..."
+            sleep 30
+            analysisId=$(grep "ceTaskId" .scannerwork/report-task.txt | cut -d'=' -f2)
+            gateStatus=$(curl -s -u "${SONAR_TOKEN}:" \
+              "${SONAR_HOST_URL}/api/qualitygates/project_status?analysisId=${analysisId}" \
+              | jq -r '.projectStatus.status')
+            echo "Quality Gate: $gateStatus"
+            echo "quality_gate_passed=$([ "$gateStatus" = "OK" ] && echo true || echo false)" >> $GITHUB_OUTPUT
 
