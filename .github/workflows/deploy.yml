@@ -30,11 +30,14 @@
           run: mvn clean verify
 
         - name: Run SonarQube Scan
+          env:
+            SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           run: |
             mvn sonar:sonar \
             -Dsonar.projectkey=myorg_myapp \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.host.login=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
+            -Dsonar.host.login=${{ env.SONAR_TOKEN }} \
             -Dskiptests=false
             
         # - name: Check SonarQube Quality Gate
