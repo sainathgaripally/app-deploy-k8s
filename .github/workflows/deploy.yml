@@ -1,4 +1,4 @@
-  name: Application Deployment
+  name: Java CI with SonarQube
 
   on:
     workflow_dispatch:
@@ -22,7 +22,7 @@
           uses: actions/cache@v4
           with:
             path: ~/.m2
-            key: ${{ runner.os }}-maven-${{ hasfiles('**/pom.xml') }}
+            key: ${{ runner.os }}-maven-${{ hashfiles('**/pom.xml') }}
             restore-keys: |
               ${{ runner.os }}-maven-
 
