@@ -42,9 +42,23 @@
             -Dskiptests=false
 
         - name: Wait for SonarQube Quality Gate (Python)
+          id: sonarcheck
           run: |
             pip install requests
             python scripts/wait_for_quality_gate.py
           env:
             SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+        - name: Upload JaCoCo Coverage Report
+          if: always()
+          uses: actions/upload-artifact@v4
+          with:
+            name: jacoco-report
+            path: target/site/jacoco/
+
+        - name: Print id
+          run: | 
+            echo ${{ steps.sonarcheck.outputs.gate_status }}
+            echo ${{ steps.sonarcheck.outputs.gate_message }}
+    
