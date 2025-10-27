@@ -2,15 +2,8 @@
 """
 wait_for_quality_gate.py
 -----------------------------------
-A self-hosted SonarQube Quality Gate checker
-Equivalent to Jenkins' waitForQualityGate() function.
-
-Steps:
-1. Reads target/sonar/report-task.txt
-2. Extracts ceTaskId and projectKey
-3. Polls /api/ce/task until status=SUCCESS
-4. Fetches /api/qualitygates/project_status
-5. Prints Quality Gate result and exits 0/1
+Waits for SonarQube analysis to complete, checks the Quality Gate,
+and exports results back to GitHub Actions.
 """
 
 import os
@@ -21,10 +14,21 @@ import requests
 SONAR_HOST_URL = os.getenv("SONAR_HOST_URL")
 SONAR_TOKEN = os.getenv("SONAR_TOKEN")
 REPORT_FILE = "target/sonar/report-task.txt"
+GITHUB_OUTPUT = os.getenv("GITHUB_OUTPUT")
 
 def fail(message):
     print(f"❌ {message}")
+    if GITHUB_OUTPUT:
+        with open(GITHUB_OUTPUT, "a") as f:
+            f.write(f"gate_status=ERROR\n")
+            f.write(f"gate_message={message}\n")
     sys.exit(1)
+
+def write_output(status, message):
+    if GITHUB_OUTPUT:
+        with open(GITHUB_OUTPUT, "a") as f:
+            f.write(f"gate_status={status}\n")
+            f.write(f"gate_message={message}\n")
 
 def main():
     if not SONAR_HOST_URL or not SONAR_TOKEN:
@@ -34,8 +38,7 @@ def main():
         fail(f"Report file not found at {REPORT_FILE}")
 
     # --- Extract ceTaskId and projectKey from report-task.txt
-    analysis_id = None
-    project_key = None
+    analysis_id, project_key = None, None
     with open(REPORT_FILE, "r") as f:
         for line in f:
             if line.startswith("ceTaskId="):
@@ -52,7 +55,7 @@ def main():
     print(f"📦 Project Key: {project_key}")
     print("⏳ Waiting for SonarQube analysis to finish...")
 
-    # --- Poll until Compute Engine finishes processing
+    # --- Poll until Compute Engine finishes
     for attempt in range(1, 21):
         try:
             resp = requests.get(
@@ -63,7 +66,7 @@ def main():
             status = task.get("status")
             print(f"Attempt {attempt}: {status}")
         except Exception as e:
-            print(f"⚠️ Error calling SonarQube API: {e}")
+            print(f"⚠️ Error contacting SonarQube: {e}")
             status = None
 
         if status == "SUCCESS":
@@ -77,7 +80,7 @@ def main():
     else:
         fail("Timeout waiting for SonarQube to finish.")
 
-    # --- Fetch Quality Gate result using projectKey
+    # --- Fetch Quality Gate result
     print("📊 Fetching Quality Gate status...")
     try:
         resp = requests.get(
@@ -92,14 +95,15 @@ def main():
     print(f"🏁 Quality Gate: {gate_status}")
 
     if not gate_status:
-        fail("Quality Gate status is None (SonarQube may still be processing). Try increasing wait time.")
+        fail("Quality Gate status is None. SonarQube may still be processing.")
 
     if gate_status != "OK":
         print("❌ Quality Gate failed.")
-        print(f"Full API Response: {data}")
+        write_output("ERROR", "❌ Quality Gate failed. Check SonarQube dashboard for details.")
         sys.exit(1)
 
     print("✅ Quality Gate passed successfully.")
+    write_output("OK", "✅ Quality Gate passed successfully.")
     sys.exit(0)
 
 if __name__ == "__main__":
