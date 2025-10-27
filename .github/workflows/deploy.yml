@@ -30,6 +30,7 @@
           run: mvn clean verify
 
         - name: Run SonarQube Scan
+          working-directory: .
           env:
             SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -42,6 +43,7 @@
             
         - name: Check SonarQube Quality Gate (self-hosted)
           id: qualitygate
+          working-directory: .
           env:
             SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
             SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
