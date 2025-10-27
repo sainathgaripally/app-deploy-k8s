@@ -4,33 +4,56 @@
     # push:
     #   branches: [ dev, qa, prod ]
     workflow_dispatch:
-      inputs:
-        environment:
-          type: choice
-          required: true
-          description: Select the environment
-          options: [ dev, qa, prod ]
   
   jobs:
-    print-job:
-      runs-on: ubuntu-latest 
-      outputs:
-        artifact_name: ${{ steps.step1.outputs.artifact_name }}
-      steps:
-        - name: Print inputs
-          id: step1
-          run: | 
-            echo "Provided input is ${{ inputs.environment }}"
-            echo "artifact_name=some-radom" >> $GITHUB_OUTPUT
-    
-        - name: Print outputs of step 1
-          run: echo "Outputs ${{ steps.step1.outputs.artifact_name }}"
-
-    second-job:
+    build_and_analyze:
+      name: Build, Test, and SonarQube Scan
       runs-on: ubuntu-latest
-      needs: print-job
-      if: needs.print-job.outputs.artifact_name == 'some_random'
+
       steps:
-        - name: Step1
-          run: echo "hi"
-          
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Setup Java
+          uses: actions/setup-java@v4
+          with:
+            distribution: temurin
+            java-version: 17
+
+        - name: Cache maven packages
+          uses: actions/cache@v4
+          with:
+            path: ~/.m2
+            key: ${{ runner.os }}-maven-${{ hasfiles('**/pom.xml') }}
+            restore-keys: |
+              ${{ runner.os }}-maven-
+
+        - name: Build and run steps
+          run: mvn clean verify
+
+        - name: Run SonarQube Scan
+          run: |
+            mvn sonar:sonar \
+            -Dsonar.projectkey=myorg_myapp \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.host.login=${{ secrets.SONAR_TOKEN }} \
+            -Dskiptests=false
+            
+        - name: Check SonarQube Quality Gate
+          id: qualitygate
+          uses: SonarSource/sonarcloud-quality-gate-action@v1
+          with:
+            scanMetadataReportFile: .scannerwork/report-task.txt
+          env:
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+            SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+        - name: Comment PR Summary
+          if: always()
+          uses: marocchino/sticky-pull-request-comment@v2
+          with:
+            message: |
+              🧪 **SonarQube Scan Summary**
+              - Quality Gate: **${{ steps.qualitygate.outputs.status }}**
+              - Dashboard: [View Results](${{ secrets.SONAR_HOST_URL }}/dashboard?id=myorg_myapp)
+              - Build: ${{ job.status }}
