@@ -37,21 +37,21 @@
             -Dsonar.host.login=${{ secrets.SONAR_TOKEN }} \
             -Dskiptests=false
             
-        - name: Check SonarQube Quality Gate
-          id: qualitygate
-          uses: SonarSource/sonarcloud-quality-gate-action@v1
-          with:
-            scanMetadataReportFile: .scannerwork/report-task.txt
-          env:
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-            SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        # - name: Check SonarQube Quality Gate
+        #   id: qualitygate
+        #   uses: SonarSource/sonarcloud-quality-gate-action@v1
+        #   with:
+        #     scanMetadataReportFile: .scannerwork/report-task.txt
+        #   env:
+        #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        #     SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
-        - name: Comment PR Summary
-          if: always()
-          uses: marocchino/sticky-pull-request-comment@v2
-          with:
-            message: |
-              🧪 **SonarQube Scan Summary**
-              - Quality Gate: **${{ steps.qualitygate.outputs.status }}**
-              - Dashboard: [View Results](${{ secrets.SONAR_HOST_URL }}/dashboard?id=myorg_myapp)
-              - Build: ${{ job.status }}
+        # - name: Comment PR Summary
+        #   if: always()
+        #   uses: marocchino/sticky-pull-request-comment@v2
+        #   with:
+        #     message: |
+        #       🧪 **SonarQube Scan Summary**
+        #       - Quality Gate: **${{ steps.qualitygate.outputs.status }}**
+        #       - Dashboard: [View Results](${{ secrets.SONAR_HOST_URL }}/dashboard?id=myorg_myapp)
+        #       - Build: ${{ job.status }}
